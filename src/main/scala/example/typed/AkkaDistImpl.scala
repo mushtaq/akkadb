@@ -39,14 +39,14 @@ class AkkaDistImpl(system: ActorSystem[ActionOnDB]) extends AkkaDistDB {
   }
 
   override def list: Future[Map[String, Int]] = {
-    println("Inside getAll....")
+    println("Inside list....")
     val get    = Replicator.Get(DataKey, Replicator.ReadLocal)
     val result = replicator ? get
 
     result.map {
       case r @ Replicator.GetSuccess(k, v) => {
         val value = r.get(k)
-        println("In Get Sucess...." + value.entries)
+        println("In list success...." + value.entries)
         value.entries
       }
       //Handle exceptions GetFailure and Notfound
