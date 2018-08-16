@@ -78,8 +78,8 @@ object AkkaDBapp {
 //
 //      Thread.sleep(5000)
 
-      //Test getAll here
-//      val eventualVal = obj.getAll
+      //Test list here
+//      val eventualVal = obj.list
 //      eventualVal.foreach { x =>
 //        print("************" + x)
 //      }

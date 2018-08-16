@@ -1,17 +1,17 @@
 package example.typed
+
 import akka.Done
+import akka.actor.Scheduler
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.cluster.Cluster
+import akka.cluster.ddata.typed.scaladsl.Replicator.{Update, UpdateResponse}
 import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
-import Replicator.{NotFound, Update, UpdateResponse}
-import akka.actor.Scheduler
 import akka.cluster.ddata.{LWWMap, LWWMapKey}
-import example.typed.AkkaDB.ActionOnDB
-import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
+import example.typed.AkkaDB.ActionOnDB
 
-import scala.concurrent
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -37,7 +37,8 @@ class AkkaDistImpl(system: ActorSystem[ActionOnDB]) extends AkkaDistDB {
       case x => throw new RuntimeException(s"update failed due to: $x")
     }
   }
-  override def getAll: Future[Map[String, Int]] = {
+
+  override def list: Future[Map[String, Int]] = {
     println("Inside getAll....")
     val get    = Replicator.Get(DataKey, Replicator.ReadLocal)
     val result = replicator ? get
@@ -55,33 +56,18 @@ class AkkaDistImpl(system: ActorSystem[ActionOnDB]) extends AkkaDistDB {
 
   override def get(key: String): Future[Option[Int]] = {
     println("Inside get ....")
-    val get    = Replicator.Get(DataKey, Replicator.ReadLocal)
-    val result = replicator ? get
-
-    result.map {
-      case r @ Replicator.GetSuccess(DataKey, v) => {
-        val values = r.get(DataKey)
-        println("In Get Success...." + values.entries.get(key))
-        values.entries.get(key)
-
-      }
-
-      // case Replicator.NotFound(DataKey, v) => throw new RuntimeException("")
-
-      case x => throw new RuntimeException(s"Get failed due to: $x")
-    }
+    list.map(_.get(key))
   }
 
   override def remove(key: String): Future[Done] = {
-
     val remove: ActorRef[UpdateResponse[LWWMap[String, Int]]] => Update[LWWMap[String, Int]] =
-      Replicator.Update(DataKey, LWWMap.empty[String, Int], Replicator.WriteLocal)(_ - (key))
+      Replicator.Update(DataKey, LWWMap.empty[String, Int], Replicator.WriteLocal)(_ - key)
 
     (replicator ? remove).map {
       case x: Replicator.UpdateSuccess[_] =>
         println("update success in remove")
         Done
-      case x => throw new RuntimeException(s"update failed due to: $x")
+      case x => throw new RuntimeException(s"deletion failed due to: $x")
     }
   }
 
