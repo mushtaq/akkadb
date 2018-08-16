@@ -1,45 +1,35 @@
 package example.typed
+
 import akka.Done
 import akka.actor.typed.ActorSystem
-import akka.japi.Option.Some
-import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
+import akka.actor.typed.scaladsl.Behaviors
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class AkkaDBTest extends FunSuite with BeforeAndAfter with Matchers {
+class AkkaDBTest extends FunSuite with BeforeAndAfterAll with Matchers {
 
-  //Actor system creation before actual tests
-  var obj: AkkaDistDB = _
+  val system          = ActorSystem(Behaviors.empty, "test")
+  private val runtime = new ActorRuntime(system)
 
-  val port: String = "2551"
-  val config = ConfigFactory
-    .parseString(
-      s"""
-           |akka.remote.netty.tcp.port=$port
-           |akka.remote.artery.canonical.port=$port
-           |""".stripMargin
-    )
-    .withFallback(ConfigFactory.load())
-  val system1: ActorSystem[AkkaDB.ActionOnDB] = akka.actor.typed.ActorSystem(AkkaDB.bhvrAkkaDD, "helloDB", config)
-  obj = new AkkaDistImpl(system1)
+  val obj: AkkaDb = new AkkaDbImpl("demo-db", runtime)
 
-  //Actual AkkaDB API testing
   test("Test set API") {
-    Await.result(obj.set("set", 10), 500 millis) shouldBe (Done)
+    Await.result(obj.set("a", 10), 2.seconds) shouldBe Done
+    Await.result(obj.set("b", 20), 2.seconds) shouldBe Done
   }
 
   test("Test list API") {
-    Await.result(obj.list, 500 millis) shouldBe (Map("set" -> 10))
+    Await.result(obj.list, 2.seconds) shouldBe Map("a" -> 10, "b" -> 20)
   }
 
   test("Tst get API") {
-    Await.result(obj.get("set"), 500 millis) shouldBe (Option(10))
+    Await.result(obj.get("a"), 2.seconds) shouldBe Option(10)
+    Await.result(obj.get("b"), 2.seconds) shouldBe Option(20)
   }
 
-  after {
-    system1.terminate()
+  override protected def afterAll(): Unit = {
+    Await.result(system.terminate(), 2.seconds)
   }
-
 }

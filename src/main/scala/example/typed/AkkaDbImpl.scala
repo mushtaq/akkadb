@@ -1,30 +1,20 @@
 package example.typed
 
 import akka.Done
-import akka.actor.Scheduler
+import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
-import akka.actor.typed.{ActorRef, ActorSystem}
-import akka.cluster.Cluster
+import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.ddata.typed.scaladsl.Replicator.{Update, UpdateResponse}
-import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
 import akka.cluster.ddata.{LWWMap, LWWMapKey}
-import akka.util.Timeout
-import example.typed.AkkaDB.ActionOnDB
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
-class AkkaDistImpl(system: ActorSystem[ActionOnDB]) extends AkkaDistDB {
+class AkkaDbImpl(dbName: String, runtime: ActorRuntime) extends AkkaDb {
 
-  private val replicator                    = DistributedData(system).replicator
-  private implicit val cluster: Cluster     = akka.cluster.Cluster(system.toUntyped)
-  private implicit val scheduler: Scheduler = system.scheduler
-  import system.executionContext
-  private implicit val timeout: Timeout = Timeout(5.seconds)
+  import runtime._
 
   //This key should hv some additional variable added to it like say table name that comes from outside this object
-  val DataKey: LWWMapKey[String, Int] = LWWMapKey[String, Int]("LWWMapKey")
+  val DataKey: LWWMapKey[String, Int] = LWWMapKey[String, Int](dbName)
 
   override def set(key: String, value: Int): Future[Done] = {
     val update: ActorRef[UpdateResponse[LWWMap[String, Int]]] => Update[LWWMap[String, Int]] =
