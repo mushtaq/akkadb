@@ -24,7 +24,7 @@ class AkkaDBTest extends FunSuite with BeforeAndAfterAll with Matchers {
     Await.result(obj.list, 2.seconds) shouldBe Map("a" -> 10, "b" -> 20)
   }
 
-  test("Tst get API") {
+  test("Test get API") {
     Await.result(obj.get("a"), 2.seconds) shouldBe Option(10)
     Await.result(obj.get("b"), 2.seconds) shouldBe Option(20)
   }
