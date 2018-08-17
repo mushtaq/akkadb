@@ -1,4 +1,4 @@
-package example.typed
+package akkadb
 
 import akka.actor.Scheduler
 import akka.actor.typed.{ActorRef, ActorSystem}

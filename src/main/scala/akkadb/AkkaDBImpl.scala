@@ -1,4 +1,4 @@
-package example.typed
+package akkadb
 
 import akka.Done
 import akka.actor.typed.ActorRef
@@ -9,11 +9,11 @@ import akka.cluster.ddata.{LWWMap, LWWMapKey}
 
 import scala.concurrent.Future
 
-class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaStore[K, V] {
+class AkkaDBImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaDB[K, V] {
+//class AkkaDBImpl[K, V](dbName: String) extends AkkaDB[K, V] {
 
   import runtime._
 
-  //This key should hv some additional variable added to it like say table name that comes from outside this object
   val DataKey: LWWMapKey[K, V] = LWWMapKey[K, V](dbName)
 
   override def set(key: K, value: V): Future[Done] = {
