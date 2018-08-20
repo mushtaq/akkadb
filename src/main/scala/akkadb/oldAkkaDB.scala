@@ -10,7 +10,7 @@ import akka.cluster.Cluster
 import akka.cluster.ddata.Replicator.ReadLocal
 import akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages
 
-object AkkaDBLegacy {
+object oldAkkaDB {
 
   sealed trait ActionOnDB
   final case class Set(key: String, value: Int)                    extends ActionOnDB
@@ -24,7 +24,7 @@ object AkkaDBLegacy {
   private case class InternalUpdateResponse[A <: ReplicatedData](rsp: Replicator.UpdateResponse[A]) extends InternalMsg
   private case class InternalGetResponse[A <: ReplicatedData](rsp: Replicator.GetResponse[A])       extends InternalMsg
 
-  val bhvrAkkaDD: Behavior[AkkaDBLegacy.ActionOnDB] = Behaviors.receive { (ctx, msg) ⇒
+  val bhvrAkkaDD: Behavior[oldAkkaDB.ActionOnDB] = Behaviors.receive { (ctx, msg) ⇒
     implicit val cluster: Cluster = akka.cluster.Cluster(ctx.system.toUntyped)
 
     val replicator: ActorRef[Replicator.Command] = DistributedData(ctx.system).replicator
