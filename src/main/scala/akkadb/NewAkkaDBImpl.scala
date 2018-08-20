@@ -1,17 +1,42 @@
 package akkadb
 
 import akka.Done
-import akka.actor.typed.ActorRef
+import akka.actor.Scheduler
+import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.cluster.ddata.typed.scaladsl.Replicator
+import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.Cluster
+import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
 import akka.cluster.ddata.typed.scaladsl.Replicator.{Update, UpdateResponse}
 import akka.cluster.ddata.{LWWMap, LWWMapKey}
+import akka.util.Timeout
 
-import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
+import com.typesafe.config.ConfigFactory
 
-class AkkaDBImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaDB[K, V] {
+import scala.concurrent.{ExecutionContext, Future}
 
-  import runtime._
+class NewAkkaDBImpl[K, V](dbName: String) extends AkkaDB[K, V] {
+
+  val port = "2552"
+
+  val config = ConfigFactory
+    .parseString(
+      s"""
+        |akka.remote.netty.tcp.port=$port
+        |akka.remote.artery.canonical.port=$port
+        |""".stripMargin
+    )
+    .withFallback(ConfigFactory.load())
+
+  // val system: ActorSystem[Nothing]             = ActorSystem(Behaviors.empty, "testHttp", config)
+  val system: ActorSystem[Nothing]             = ActorSystem(Behaviors.empty, "testHttp")
+  val replicator: ActorRef[Replicator.Command] = DistributedData(system).replicator
+  implicit val cluster: Cluster                = akka.cluster.Cluster(system.toUntyped)
+  implicit val scheduler: Scheduler            = system.scheduler
+  implicit val ec: ExecutionContext            = system.executionContext
+  implicit val timeout: Timeout                = Timeout(5.seconds)
 
   val DataKey: LWWMapKey[K, V] = LWWMapKey[K, V](dbName)
 
