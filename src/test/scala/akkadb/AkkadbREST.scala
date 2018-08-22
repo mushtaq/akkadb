@@ -8,12 +8,10 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
 import akka.http.scaladsl.server.Directives._
 
-final case class setRequest(k: String, v: String)
-
 class AkkadbREST extends WordSpec with Matchers with ScalatestRouteTest with ScalaFutures {
 
-  //private val wiringTest = new Wiring
-  //wiringTest.akkaDbServer.start()
+  private val wiringTest = new Wiring
+  wiringTest.akkaDbServer.start()
 
   //override val system = actor.ActorSystem("akka-store")
 
@@ -26,7 +24,7 @@ class AkkadbREST extends WordSpec with Matchers with ScalatestRouteTest with Sca
       val data = ByteString(s""" {"key":"a", "value":"100"} """)
 
       val postRequest = HttpRequest(POST, "/akkadb/demo-db/set", entity = HttpEntity(MediaTypes.`application/json`, data))
-      postRequest ~> TestAkkaDbRoutes.routeTest ~> check {
+      postRequest ~> wiringTest.akkaDBRoutes.route ~> check {
         responseAs[String] shouldEqual "\"Successfully added to store - Key : a - Value : 100\""
       }
     }
@@ -49,7 +47,7 @@ class AkkadbREST extends WordSpec with Matchers with ScalatestRouteTest with Sca
       }
     }
 
-    "GET list1" in {
+    /* "GET list1" in {
       val getRequest = HttpRequest(GET, uri = "/akkadb/demo-db/list")
       getRequest ~> TestAkkaDbRoutes.routeTest ~> check {
         responseAs[String] shouldEqual "\"In list\""
@@ -81,7 +79,7 @@ class AkkadbREST extends WordSpec with Matchers with ScalatestRouteTest with Sca
         responseAs[String] shouldEqual "\"In list\""
       }
 
-    }
+    }*/
 
   }
 }
