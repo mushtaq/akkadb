@@ -1,3 +1,6 @@
+COnfiguration of application.conf
+https://doc.akka.io/docs/akka/2.4.20/general/configuration.html
+
 HTTP request forming in akka HTTP
 https://doc.akka.io/docs/akka-http/current/common/http-model.html
 
