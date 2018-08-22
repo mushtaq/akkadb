@@ -17,7 +17,7 @@ import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class NewAkkaDBImpl[K, V](dbName: String) extends AkkaDB[K, V] {
+class oldAkkaDBImpl[K, V](dbName: String) extends AkkaDB[K, V] {
 
   val port = "2552"
 

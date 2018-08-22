@@ -1,3 +1,12 @@
+HTTP request forming in akka HTTP
+https://doc.akka.io/docs/akka-http/current/common/http-model.html
+
+good links for Akka HTTP examples and learning
+https://spindance.com/reactive-rest-services-akka-http/
+https://doc.akka.io/docs/akka/2.4.6/scala/http/routing-dsl/routes.html#routes
+
+git push origin master
+
 (path("ElevationService" / DoubleNumber / DoubleNumber) & entity(as[ScriveRequest])) {
   (long, lat, scriveRequest) => ...
 
@@ -26,6 +35,11 @@ def stop(): Unit = {
     materializer.shutdown()
     Await.result(system.terminate(), Duration.Inf)
   }
+
+
+to shut down akka http system one can also use
+bindingFuture.flatmap(_.unbind)
+system.terminate()
 
 
 https://dzone.com/articles/akka-notes-actorsystem

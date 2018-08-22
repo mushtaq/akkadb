@@ -14,7 +14,6 @@ class AkkaDBTest extends FunSuite with BeforeAndAfterAll with Matchers {
   private val runtime = new ActorRuntime(system)
 
   val objInt: AkkaDB[String, Int] = new AkkaDBImpl("demo-db-IntVal", runtime)
-  //val objInt: AkkaDB[String, Int] = new AkkaDBImpl("demo-db-IntVal")
 
   test("Test set API for Int") {
     Await.result(objInt.set("a", 10), 2.seconds) shouldBe Done
