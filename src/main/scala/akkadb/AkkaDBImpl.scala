@@ -9,8 +9,7 @@ import akka.cluster.ddata.{LWWMap, LWWMapKey}
 
 import scala.concurrent.Future
 
-class AkkaDBImpl[K, V](keyCodec: AkkaStoreCodec[K], valueCodec: AkkaStoreCodec[V])
-                      (dbName: String, runtime: ActorRuntime) extends AkkaDB(keyCodec, valueCodec) {
+class AkkaDBImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaDB[K, V] {
   import runtime._
 
   val DataKey: LWWMapKey[K, V] = LWWMapKey[K, V](dbName)
