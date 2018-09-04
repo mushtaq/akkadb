@@ -15,7 +15,7 @@ import akka.http.scaladsl.Http
 class AkkadbREST extends WordSpec with Matchers with ScalatestRouteTest with ScalaFutures {
 
   lazy val actorRuntime                  = new ActorRuntime(system.toTyped)
-  lazy val akkDb: AkkaDB[String, String] = new AkkaDBImpl[String, String]("demo-db", actorRuntime)
+  lazy val akkDb: AkkaDB[String, String] = new AkkaDBImpl(AkkaStoreCodec.StringCodec, AkkaStoreCodec.StringCodec)("demo-db", actorRuntime)
   lazy val akkaDBRoutes                  = new AkkaDbRoutes(akkDb)
   lazy val akkaDbServer                  = new AkkaDbServer(akkaDBRoutes, actorRuntime)
 
