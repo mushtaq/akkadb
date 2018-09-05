@@ -1,4 +1,4 @@
-package akkadb
+package akkastore
 
 import akka.actor
 import akka.actor.Scheduler

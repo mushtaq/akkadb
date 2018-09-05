@@ -1,9 +1,9 @@
-package akkadb
+package akkastore
 import akka.http.scaladsl.Http
 
 import scala.concurrent.Future
 
-class AkkaDbServer(route: AkkaDbRoutes, actorRuntime: ActorRuntime) {
+class AkkaStoreServer(route: AkkaStoreRoutes, actorRuntime: ActorRuntime) {
   import actorRuntime._
   def start(): Future[Http.ServerBinding] = {
     println("server started don't know the port *** ")

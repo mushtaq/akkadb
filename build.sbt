@@ -1,4 +1,4 @@
-name := "AkkaDB"
+name := "AkkaStore"
 
 version := "0.1"
 

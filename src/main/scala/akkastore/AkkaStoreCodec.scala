@@ -1,4 +1,4 @@
-package akkadb
+package akkastore
 
 trait AkkaStoreCodec[T] {
   def toString(value: T): String
