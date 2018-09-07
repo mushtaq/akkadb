@@ -1,7 +1,5 @@
 package akkastore.api
 
-import play.api.libs.json.JsValue
-
 import scala.concurrent.Future
 
 abstract class AkkaStore[K, V] {

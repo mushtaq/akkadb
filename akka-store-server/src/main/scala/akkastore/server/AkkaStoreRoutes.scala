@@ -5,37 +5,38 @@ import akkastore.api.{AkkaStore, JsonSupport, KVPayload}
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import play.api.libs.json.JsValue
 
-class AkkaStoreRoutes(akkaStore: AkkaStore[JsValue, JsValue]) extends JsonSupport with PlayJsonSupport with Directives {
+class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJsonSupport with Directives {
 
   val route: Route =
-    pathPrefix("akkastore") {
+    pathPrefix("akkastore" / Segment) { dbName =>
+      val jsonAkkaStore: AkkaStore[JsValue, JsValue] = new AkkaStoreImpl(dbName, actorRuntime)
+
       get {
-        path("demo-store" / "list") {
+        path("list") {
           println("* * *In demo-db list * * *")
-          complete(akkaStore.list)
+          complete(jsonAkkaStore.list)
         }
       } ~
       post {
-        path("demo-store" / "get") {
+        path("get") {
           entity(as[JsValue]) { key =>
             println(s"* * *In demo-db get. Key is - $key * * *")
-            complete(akkaStore.get(key))
+            complete(jsonAkkaStore.get(key))
           }
         } ~
-        path("demo-store" / "set") {
+        path("set") {
           entity(as[KVPayload[JsValue, JsValue]]) {
             case KVPayload(key, value) =>
               println(s"* * * In demo-db set. Key : $key - Value : $value * * *")
-              onSuccess(akkaStore.set(key, value)) { result =>
-                println(result)
+              onSuccess(jsonAkkaStore.set(key, value)) { _ =>
                 complete(s"Successfully set value for key=$key")
               }
           }
         } ~
-        path("demo-store" / "remove") {
+        path("remove") {
           entity(as[JsValue]) { key =>
             println(s"* * *In demo-db remove. Key is - $key * * *")
-            onSuccess(akkaStore.remove(key)) { _ =>
+            onSuccess(jsonAkkaStore.remove(key)) { _ =>
               complete(s"Successfully removed key=$key")
             }
           }
