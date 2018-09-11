@@ -22,7 +22,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
   implicit val ec: ExecutionContext       = actorSystem.dispatcher
 
   override def list: Future[List[KVPayload[K, V]]] = async {
-    val request  = HttpRequest().withUri(s"$baseUri/demo-store/list")
+    val request  = HttpRequest().withUri(s"$baseUri/list")
     val response = await(Http().singleRequest(request))
     await(Unmarshal(response.entity).to[List[KVPayload[K, V]]])
   }
@@ -31,7 +31,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
 
     val request = HttpRequest()
       .withMethod(HttpMethods.POST)
-      .withUri(s"$baseUri/demo-store/get")
+      .withUri(s"$baseUri/get")
       .withEntity(await(Marshal(key).to[MessageEntity]))
 
     println(request)
@@ -44,10 +44,10 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
   override def set(key: K, value: V): Future[Ok] = async {
     val request = HttpRequest()
       .withMethod(HttpMethods.POST)
-      .withUri(s"$baseUri/demo-store/set")
+      .withUri(s"$baseUri/set")
       .withEntity(await(Marshal(KVPayload(key, value)).to[MessageEntity]))
 
-    //println(request)
+    println(request)
 
     val response = await(Http().singleRequest(request))
 
@@ -63,7 +63,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
 
     val request = HttpRequest()
       .withMethod(HttpMethods.POST)
-      .withUri(s"$baseUri/demo-store/remove")
+      .withUri(s"$baseUri/remove")
       .withEntity(await(Marshal(key).to[MessageEntity]))
 
     val response = await(Http().singleRequest(request))
