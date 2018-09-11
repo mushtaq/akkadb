@@ -21,10 +21,10 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
   implicit val materializer: Materializer = ActorMaterializer()
   implicit val ec: ExecutionContext       = actorSystem.dispatcher
 
-  override def list: Future[Map[K, V]] = async {
+  override def list: Future[List[KVPayload[K, V]]] = async {
     val request  = HttpRequest().withUri(s"$baseUri/demo-store/list")
     val response = await(Http().singleRequest(request))
-    await(Unmarshal(response.entity).to[List[KVPayload[K, V]]]).map(x => (x.key, x.value)).toMap
+    await(Unmarshal(response.entity).to[List[KVPayload[K, V]]])
   }
 
   override def get(key: K): Future[Option[V]] = async {
@@ -47,7 +47,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
       .withUri(s"$baseUri/demo-store/set")
       .withEntity(await(Marshal(KVPayload(key, value)).to[MessageEntity]))
 
-    println(request)
+    //println(request)
 
     val response = await(Http().singleRequest(request))
 

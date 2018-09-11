@@ -18,7 +18,7 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
 
   }
 
-  implicit class BockingFuture[T](f: Future[T]) {
+  implicit class BlockingFuture[T](f: Future[T]) {
     def get: T = Await.result(f, 5.seconds)
   }
 }

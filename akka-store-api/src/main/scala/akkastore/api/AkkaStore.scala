@@ -4,7 +4,7 @@ import scala.concurrent.Future
 
 abstract class AkkaStore[K, V] {
   def set(key: K, value: V): Future[Ok]
-  def list: Future[Map[K, V]]
+  def list: Future[List[KVPayload[K, V]]]
   def get(key: K): Future[Option[V]]
   def remove(key: K): Future[Ok]
 }
