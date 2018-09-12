@@ -6,7 +6,7 @@ import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.ddata.typed.scaladsl.Replicator.{Update, UpdateResponse}
 import akka.cluster.ddata.{LWWMap, LWWMapKey}
 import akkastore.api.{AkkaStore, KVPayload, Ok}
-
+import scala.async.Async._
 import scala.concurrent.Future
 
 class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaStore[K, V] {
@@ -14,11 +14,12 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
 
   val DataKey: LWWMapKey[K, V] = LWWMapKey[K, V](dbName)
 
-  override def set(key: K, value: V): Future[Ok] = {
+  override def set(key: K, value: V): Future[Ok] = async {
     val update: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
       Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ + (key, value))
 
-    (replicator ? update).map {
+    val result = await(replicator ? update)
+    result match {
       case x: Replicator.UpdateSuccess[_] =>
         println("update success in set")
         Ok
@@ -35,12 +36,12 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     listInner.map(_.get(key))
   }
 
-  private def listInner: Future[Map[K, V]] = {
+  private def listInner: Future[Map[K, V]] = async {
     println("Inside innerList....")
     val get    = Replicator.Get(DataKey, Replicator.ReadLocal)
-    val result = replicator ? get
+    val result = await(replicator ? get)
 
-    result.map {
+    result match {
       case r @ Replicator.GetSuccess(k, v) =>
         val v = r.get(k)
         println("In innerList success...." + v.entries)
@@ -50,11 +51,12 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     }
   }
 
-  override def remove(key: K): Future[Ok] = {
+  override def remove(key: K): Future[Ok] = async {
     val remove: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
       Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ - key)
 
-    (replicator ? remove).map {
+    val result = await(replicator ? remove)
+    result match {
       case x: Replicator.UpdateSuccess[_] =>
         println("update success in remove")
         Ok
