@@ -13,21 +13,21 @@ class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJ
 
       get {
         path("list") {
-          println("* * *In demo-db list * * *")
+          println(s"* * *In $dbName list * * *")
           complete(jsonAkkaStore.list)
         }
       } ~
       post {
         path("get") {
           entity(as[JsValue]) { key =>
-            println(s"* * *In demo-db get. Key is - $key * * *")
+            println(s"* * *In $dbName get. Key is - $key * * *")
             complete(jsonAkkaStore.get(key))
           }
         } ~
         path("set") {
           entity(as[KVPayload[JsValue, JsValue]]) {
             case KVPayload(key, value) =>
-              println(s"* * * In demo-db set. Key : $key - Value : $value * * *")
+              println(s"* * * In $dbName set. Key : $key - Value : $value * * *")
               onSuccess(jsonAkkaStore.set(key, value)) { _ =>
                 complete(s"Successfully set value for key=$key")
               }
@@ -35,7 +35,7 @@ class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJ
         } ~
         path("remove") {
           entity(as[JsValue]) { key =>
-            println(s"* * *In demo-db remove. Key is - $key * * *")
+            println(s"* * *In $dbName remove. Key is - $key * * *")
             onSuccess(jsonAkkaStore.remove(key)) { _ =>
               complete(s"Successfully removed key=$key")
             }
