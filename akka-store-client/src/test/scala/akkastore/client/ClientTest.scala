@@ -8,11 +8,11 @@ import scala.concurrent.{Await, Future}
 
 class ClientTest extends FunSuite with Matchers with TestJsonSupport {
 
-  test("dd") {
-    implicit val actorSystem: ActorSystem = ActorSystem("test")
+  implicit val actorSystem: ActorSystem = ActorSystem("test")
 
-    //Testing with model that has key of type Int
-    val client = new AkkaStoreClient[NumId, NumStrDatails]("http://localhost:8080/akkastore/demo-store")
+  test("Test Model1 - key of type Int") {
+
+    val client = new AkkaStoreClient[NumId, NumStrDatails]("http://localhost:8080/akkastore/demo-store1")
 
     client.set(NumId(1), NumStrDatails("name1", "9898989")).get
     client.set(NumId(2), NumStrDatails("name2", "878787")).get
@@ -23,10 +23,10 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
     println(client.get(NumId(1)).get)
     client.remove(NumId(2))
     println((client.list).get)
+  }
+  //Thread.sleep(2000)
 
-    Thread.sleep(2000)
-
-    //Testing with model that has key of type String
+  test("Test Model2 - key of type String") {
 
     val client2 = new AkkaStoreClient[Id, Person]("http://localhost:8080/akkastore/demo-store2")
 
