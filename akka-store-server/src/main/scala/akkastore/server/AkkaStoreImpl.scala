@@ -6,11 +6,13 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.ddata.typed.scaladsl.Replicator.{Update, UpdateResponse}
 import akka.cluster.ddata.{LWWMap, LWWMapKey, LWWRegister, LWWRegisterKey, ORSetKey}
+import akka.http.scaladsl.marshalling.EmptyValue
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akkastore.api.WatchEvent.{Completed, Failure, KeyRemoved, ValueUpdated}
 import akkastore.api.{AkkaStore, KVPayload, Ok, WatchEvent}
+import com.sun.istack.internal.Nullable
 
 import scala.async.Async._
 import scala.concurrent.Future
@@ -19,9 +21,16 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
   import runtime._
 
   val DataKey: LWWMapKey[K, V] = LWWMapKey[K, V](dbName)
+  //var watchKey: LWWRegisterKey[Option[V]] = LWWRegisterKey("")
+  var watchKey: LWWRegisterKey[Option[V]] = _
 
   override def set(key: K, value: V): Future[Ok] = async {
-    println("set key-val " + key + " " + value)
+
+    //for Key Watching
+    // val watchReg = new WatchRegistry(key)
+    //watchReg.addWatchKey(key, value)
+    addWatchKey(key, value)
+
     val update: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
       Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ + (key, value))
 
@@ -71,7 +80,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     }
   }
 
-  override def watch(key: K): Source[WatchEvent[V], NotUsed] = {
+  override def watch(key: K, value: V): Source[WatchEvent[V], NotUsed] = {
 
     println("In watch Impl")
 
@@ -86,25 +95,38 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
       .map(x => akkaStoreSoure ! x)
       .runWith(Sink.ignore) */
 
+    //first try to get key with keyName, if exists means you don't need to add to registry.
+    //else add empty value to registry....
+    //  val v: Option[V] = Option.empty[V]
+    //val watchReg = new WatchRegistry(key)
+    //    watchReg.addWatchKey(key, v.get)
+    //val myKey = WatchRegistry.watchKey
+
+    //trackWatchKey(key) //temporary - for now testing with already existing keys
+    addWatchKey(key, value) //here we should call addWatch with empty value
+
     implicit val dd: Source[WatchEvent[V], NotUsed.type] = ActorSource
-      .actorRef[Replicator.Changed[LWWMap[K, V]]](
+      .actorRef[Replicator.Changed[LWWRegister[Option[V]]]](
         completionMatcher = PartialFunction.empty,
         failureMatcher = PartialFunction.empty,
         1024,
         OverflowStrategy.dropHead
       )
       .mapMaterializedValue { actorRef =>
-        replicator ! Replicator.Subscribe[LWWMap[K, V]](DataKey, actorRef)
-        println("In upcast .... ")
+        replicator ! Replicator.Subscribe[LWWRegister[Option[V]]](watchKey, actorRef)
+        //println("In upcast .... ")
         NotUsed
       }
       .collect {
-        case _ =>
-          println("In collect ...")
+        case c @ Replicator.Changed(datakey) =>
+          /*if c.get(watchKey).isDefined ⇒*/
+          println("Value Changed ... " + datakey)
+          ValueUpdated(c.get(datakey).value.get)
+        case c @ Replicator.Changed(dataKey) ⇒
+          println("Value Removed ... " + dataKey)
           KeyRemoved
-        // case c @ Replicator.Changed(dataKey) if c.get(dataKey).isDefined ⇒
-        //ValueUpdated(c.get(dataKey).value.get)
-        //case c @ Replicator.Changed(dataKey) ⇒ KeyRemoved
+        case _ => throw new RuntimeException(s"Exeption in Subscribed collect..")
+
       }
 
     dd.to(Sink.foreach(println)).run()
@@ -112,4 +134,32 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
 
   }
 
+  //class WatchRegistry(key: K) {
+
+  //val watchKey: LWWRegisterKey[Option[V]] = LWWRegisterKey(key.toString)
+
+  def trackWatchKey(key: K) = {
+
+    //println("track key - " + key.toString)
+    watchKey = LWWRegisterKey(key.toString)
+  }
+
+  def addWatchKey(key: K, value: V): Future[Ok] = async {
+
+    println("In setForWatchKey..." + key + " " + value)
+    // val myKey: LWWRegisterKey[Option[V]] = LWWRegisterKey(key.toString)
+    trackWatchKey(key)
+
+    val update: ActorRef[UpdateResponse[LWWRegister[Option[V]]]] => Update[LWWRegister[Option[V]]] =
+      Replicator.Update(watchKey, LWWRegister(Option.empty[V]), Replicator.WriteLocal)(_ => LWWRegister(Some(value)))
+
+    val result = await(replicator ? update)
+    result match {
+      case x: Replicator.UpdateSuccess[_] =>
+        //println("setForWatchKey update success..")
+        Ok
+      case x => throw new RuntimeException(s"update failed due to: $x")
+    }
+  }
+  // }
 }

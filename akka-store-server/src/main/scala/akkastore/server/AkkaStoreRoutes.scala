@@ -44,12 +44,14 @@ class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJ
           }
         } ~
         path("watch") {
-          entity(as[JsValue]) { key =>
-            println(s"* * *In $dbName watch. Key is - $key * * *")
-            //here we can push to client changed value against key by using server side events...
-            val akkaSource = jsonAkkaStore.watch(key) //{
+          // entity(as[JsValue]) { key =>
+          entity(as[KVPayload[JsValue, JsValue]]) {
+            case KVPayload(key, value) =>
+              println(s"* * *In $dbName watch. Key is - $key * * *")
+              //here we can push to client changed value against key by using server side events...
+              val akkaSource = jsonAkkaStore.watch(key, value) //{
 
-            complete(s"Successfully watching key=$key")
+              complete(s"Successfully watching key=$key")
 
           }
         }

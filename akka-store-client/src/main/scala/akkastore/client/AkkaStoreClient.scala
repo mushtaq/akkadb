@@ -78,5 +78,6 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
     }
   }
 
-  override def watch(key: K): Source[WatchEvent[V], NotUsed] = { ??? }
+  // override def watch(key: K): Source[WatchEvent[V], NotUsed] = { ??? }
+  override def watch(key: K, value: V): Source[WatchEvent[V], NotUsed] = { ??? }
 }

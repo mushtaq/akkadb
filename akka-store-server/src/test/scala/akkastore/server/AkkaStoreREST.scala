@@ -98,5 +98,86 @@ class AkkaStoreREST
         responseAs[String] shouldEqual "Successfully removed key=" + """"b""""
       }
     }
+
+    "GET list2" in {
+
+      Get("/akkastore/demo-store/list") ~> akkaDBRoutes.route ~> check {
+
+        status shouldBe StatusCodes.OK
+
+        val expectedList = List(KVPayload("a", "100"), KVPayload("c", "300"))
+        val r            = entityAs[List[KVPayload[String, String]]]
+        r.toSet shouldEqual expectedList.toSet
+      }
+    }
+
+  }
+
+  "Watch Key API" should {
+    "POST set a" in {
+
+      val payload = KVPayload("a", "100")
+      Post("/akkastore/demo-store/set", payload) ~> akkaDBRoutes.route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] shouldEqual s"Successfully set value for key=" + """"a""""
+      }
+    }
+
+    Thread.sleep(1000)
+
+    "POST watch" in {
+      val payload = KVPayload("a", "")
+      Post("/akkastore/demo-store/watch", payload) ~> akkaDBRoutes.route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] shouldEqual "Successfully watching key=" + """"a""""
+      }
+    }
+
+    Thread.sleep(1000)
+    "POST set a1" in {
+
+      val payload = KVPayload("a", "200")
+      Post("/akkastore/demo-store/set", payload) ~> akkaDBRoutes.route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] shouldEqual s"Successfully set value for key=" + """"a""""
+      }
+    }
+  }
+
+  "Watch Key API 2" should {
+
+    "POST watch 2" in {
+
+      val payload = KVPayload("a", "")
+      Post("/akkastore/demo-store/watch", payload) ~> akkaDBRoutes.route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] shouldEqual "Successfully watching key=" + """"a""""
+      }
+    }
+
+    Thread.sleep(3000)
+
+    "POST set a2" in {
+
+      val payload = KVPayload("a", "200")
+      Post("/akkastore/demo-store/set", payload) ~> akkaDBRoutes.route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] shouldEqual s"Successfully set value for key=" + """"a""""
+      }
+    }
+
+    Thread.sleep(4000)
+
+    "POST set a3" in {
+
+      val payload = KVPayload("a", "300")
+      Post("/akkastore/demo-store/set", payload) ~> akkaDBRoutes.route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] shouldEqual s"Successfully set value for key=" + """"a""""
+      }
+    }
+
+    Thread.sleep(4000)
+
   }
 }

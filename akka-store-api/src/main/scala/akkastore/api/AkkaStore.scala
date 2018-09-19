@@ -10,7 +10,8 @@ abstract class AkkaStore[K, V] {
   def list: Future[List[KVPayload[K, V]]]
   def get(key: K): Future[Option[V]]
   def remove(key: K): Future[Ok]
-  def watch(key: K): Source[WatchEvent[V], NotUsed]
+  // def watch(key: K): Source[WatchEvent[V], NotUsed]
+  def watch(key: K, value: V): Source[WatchEvent[V], NotUsed]
 }
 
 sealed trait Ok
