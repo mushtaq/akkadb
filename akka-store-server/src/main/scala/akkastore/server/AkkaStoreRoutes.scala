@@ -1,6 +1,8 @@
 package akkastore.server
 
 import akka.http.scaladsl.server.{Directives, Route}
+import akka.stream.scaladsl.Sink
+import akkastore.api.WatchEvent.KeyRemoved
 import akkastore.api.{AkkaStore, JsonSupport, KVPayload}
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import play.api.libs.json.JsValue
@@ -39,6 +41,16 @@ class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJ
             onSuccess(jsonAkkaStore.remove(key)) { _ =>
               complete(s"Successfully removed key=$key")
             }
+          }
+        } ~
+        path("watch") {
+          entity(as[JsValue]) { key =>
+            println(s"* * *In $dbName watch. Key is - $key * * *")
+            //here we can push to client changed value against key by using server side events...
+            val akkaSource = jsonAkkaStore.watch(key) //{
+
+            complete(s"Successfully watching key=$key")
+
           }
         }
       }

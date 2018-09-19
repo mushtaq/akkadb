@@ -1,12 +1,14 @@
 package akkastore.client
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, Materializer}
-import akkastore.api.{AkkaStore, JsonSupport, KVPayload, Ok}
+import akkastore.api._
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import play.api.libs.json.Format
 
@@ -75,4 +77,6 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
       case x              => throw new RuntimeException(response.entity.toString)
     }
   }
+
+  override def watch(key: K): Source[WatchEvent[V], NotUsed] = { ??? }
 }
