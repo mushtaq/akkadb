@@ -5,6 +5,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, Materializer}
@@ -79,5 +81,23 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
   }
 
   // override def watch(key: K): Source[WatchEvent[V], NotUsed] = { ??? }
-  override def watch(key: K, value: V): Source[WatchEvent[V], NotUsed] = { ??? }
+  override def watch(key: K): Source[WatchEvent[V], NotUsed] = {
+
+    val resSource = async {
+
+      val request = HttpRequest()
+        .withMethod(HttpMethods.POST)
+        .withUri(s"$baseUri/watch")
+        .withEntity(await(Marshal(key).to[MessageEntity]))
+
+      println(request)
+
+      val response = await(Http().singleRequest(request))
+      println(response)
+      await(Unmarshal(response.entity).to[Source[ServerSentEvent, NotUsed]])
+    }
+
+    //Here form a Source that will return Source[WatchEvent[V], NotUsed]
+    ???
+  }
 }

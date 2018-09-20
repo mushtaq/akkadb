@@ -10,8 +10,7 @@ abstract class AkkaStore[K, V] {
   def list: Future[List[KVPayload[K, V]]]
   def get(key: K): Future[Option[V]]
   def remove(key: K): Future[Ok]
-  // def watch(key: K): Source[WatchEvent[V], NotUsed]
-  def watch(key: K, value: V): Source[WatchEvent[V], NotUsed]
+  def watch(key: K): Source[WatchEvent[V], NotUsed]
 }
 
 sealed trait Ok
@@ -23,6 +22,4 @@ sealed trait WatchEvent[+T]
 object WatchEvent {
   case class ValueUpdated[V](value: V) extends WatchEvent[V]
   case object KeyRemoved               extends WatchEvent[Nothing]
-  case object Completed                extends WatchEvent[Nothing]
-  case class Failure(ex: Exception)    extends WatchEvent[Nothing]
 }
