@@ -17,6 +17,7 @@ sealed trait Ok
 case object Ok extends Ok
 
 case class KVPayload[K, V](key: K, value: V)
+case class KPayload[K](key: K)
 
 sealed trait WatchEvent[+T]
 object WatchEvent {

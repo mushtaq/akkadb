@@ -3,13 +3,12 @@ package akkastore.server
 import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akkastore.api.{JsonSupport, KVPayload}
+import akkastore.api.{JsonSupport, KPayload, KVPayload}
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
 import play.api.libs.json
 import play.api.libs.json.{Format, JsValue, Json, OFormat}
-import akkastore.api.KVPayload
 
 case class KVJson(key: String, value: String)
 
@@ -114,7 +113,7 @@ class AkkaStoreREST
   }
 
   "Watch Key API" should {
-    "POST set a" in {
+    "POST set a1" in {
 
       val payload = KVPayload("a", "100")
       Post("/akkastore/demo-store/set", payload) ~> akkaDBRoutes.route ~> check {
@@ -123,40 +122,26 @@ class AkkaStoreREST
       }
     }
 
-    //Thread.sleep(1000)
-
-    "POST watch" in {
-      Post("/akkastore/demo-store/watch", "a") ~> akkaDBRoutes.route ~> check {
-        status shouldBe StatusCodes.OK
-        responseAs[String] shouldEqual "Successfully watching key=" + """"a""""
-      }
-    }
-
     Thread.sleep(1000)
-    "POST set a1" in {
+    /*
+    "GET set a1" in {
 
-      val payload = KVPayload("a", "200")
-      Post("/akkastore/demo-store/set", payload) ~> akkaDBRoutes.route ~> check {
+      Post("/akkastore/demo-store/get", "a") ~> akkaDBRoutes.route ~> check {
         status shouldBe StatusCodes.OK
-        responseAs[String] shouldEqual s"Successfully set value for key=" + """"a""""
+        responseAs[String] shouldEqual "100"
       }
     }
+     */
 
-    Thread.sleep(3000)
-  }
-
-  "Watch Key API 2" should {
-
-    "POST watch 2" in {
-
-      Post("/akkastore/demo-store/watch", "a") ~> akkaDBRoutes.route ~> check {
+    "POST watch  1" in {
+      Post("/akkastore/demo-store/watch", KPayload("a")) ~> akkaDBRoutes.route ~> check {
         status shouldBe StatusCodes.OK
         responseAs[String] shouldEqual "Successfully watching key=" + """"a""""
       }
     }
 
-    Thread.sleep(2000)
-
+    /*
+    Thread.sleep(1000)
     "POST set a2" in {
 
       val payload = KVPayload("a", "200")
@@ -165,10 +150,34 @@ class AkkaStoreREST
         responseAs[String] shouldEqual s"Successfully set value for key=" + """"a""""
       }
     }
+     */
+
+    Thread.sleep(3000)
+  }
+
+  "Watch Key API 2" should {
+
+    "POST watch 2" in {
+
+      Post("/akkastore/demo-store/watch", KPayload("a")) ~> akkaDBRoutes.route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] shouldEqual "Successfully watching key=" + """"a""""
+      }
+    }
 
     Thread.sleep(1000)
 
-    /* "POST set a3" in {
+    "POST set a10" in {
+
+      val payload = KVPayload("a", "200")
+      Post("/akkastore/demo-store/set", payload) ~> akkaDBRoutes.route ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] shouldEqual s"Successfully set value for key=" + """"a""""
+      }
+    }
+    Thread.sleep(1000)
+
+    /* "POST set a30" in {
 
       val payload = KVPayload("a", "300")
       Post("/akkastore/demo-store/set", payload) ~> akkaDBRoutes.route ~> check {
@@ -176,8 +185,7 @@ class AkkaStoreREST
         responseAs[String] shouldEqual s"Successfully set value for key=" + """"a""""
       }
     }
-     */
-    Thread.sleep(2000)
-
+    Thread.sleep(3000)
+   */
   }
 }

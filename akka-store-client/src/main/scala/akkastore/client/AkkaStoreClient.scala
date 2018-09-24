@@ -80,7 +80,6 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
     }
   }
 
-  // override def watch(key: K): Source[WatchEvent[V], NotUsed] = { ??? }
   override def watch(key: K): Source[WatchEvent[V], NotUsed] = {
 
     val resSource = async {
