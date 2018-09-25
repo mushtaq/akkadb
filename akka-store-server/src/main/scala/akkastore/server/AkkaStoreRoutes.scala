@@ -1,12 +1,14 @@
 package akkastore.server
 
+import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.{Directives, Route}
-import akkastore.api.{AkkaStore, JsonSupport, KPayload, KVPayload}
+import akkastore.api._
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
-import play.api.libs.json.JsValue
-import akka.stream.scaladsl.{Sink, Source}
+import play.api.libs.json.{Format, JsValue, Json}
 
+import scala.concurrent.duration._
 class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJsonSupport with Directives {
+  import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 
   val route: Route =
     pathPrefix("akkastore" / Segment) { dbName =>
@@ -43,15 +45,22 @@ class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJ
           }
         } ~
         path("watch") {
-          entity(as[KPayload[JsValue]]) {
-            case KPayload(key) =>
-              println(s"* * *In $dbName watch. Key is - $key * * *")
-              val akkaSource = jsonAkkaStore.watch(key) //{
-              akkaSource.to(Sink.foreach(println)).run()(actorRuntime.mat)
-
-              //here we can push to client changed value against key by using server side events...
-
-              complete(s"Successfully watching key=$key")
+          entity(as[JsValue]) { key =>
+            println(s"* * *In $dbName watch. Key is - $key * * *")
+            complete {
+              jsonAkkaStore
+                .watch(key)
+                .map { msg =>
+                  println("*" * 80)
+                  println(msg)
+                  println("*" * 80)
+                  //here we can push to client changed value against key by using server side events...
+                  ServerSentEvent(Json.toJson(msg).toString)
+                }
+                .keepAlive(1.second, () => ServerSentEvent.heartbeat)
+              //.to(Sink.ignore)
+              //.run()(actorRuntime.mat)
+            }
           }
         }
       }

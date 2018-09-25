@@ -5,12 +5,12 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.cluster.ddata.typed.scaladsl.Replicator
 import akka.cluster.ddata.typed.scaladsl.Replicator.{Update, UpdateResponse}
-import akka.cluster.ddata.{LWWMap, LWWMapKey, LWWRegister, LWWRegisterKey, ORSetKey}
+import akka.cluster.ddata._
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.typed.scaladsl.ActorSource
 import akkastore.api.WatchEvent.{KeyRemoved, ValueUpdated}
-import akkastore.api.{AkkaStore, KVPayload, Ok, WatchEvent}
+import akkastore.api._
 
 import scala.async.Async._
 import scala.concurrent.Future
@@ -74,13 +74,15 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     }
   }
 
-  override def watch(key: K): Source[WatchEvent[V], NotUsed] = {
+  //override def watch(key: K): Source[WatchEvent[V], Future[NotUsed]] = {
+  override def watch(key: K): Source[MyWatchEvent[V], Future[NotUsed]] = {
 
     println("In watch Impl")
 
     val subscribekey: LWWRegisterKey[Option[V]] = LWWRegisterKey(key.toString)
 
-    implicit val watchEvent: Source[WatchEvent[V], NotUsed.type] = ActorSource
+    //implicit val watchEvent: Source[WatchEvent[V], Future[NotUsed]] = ActorSource
+    implicit val watchEvent: Source[MyWatchEvent[V], Future[NotUsed]] = ActorSource
       .actorRef[Replicator.Changed[LWWRegister[Option[V]]]](
         completionMatcher = PartialFunction.empty,
         failureMatcher = PartialFunction.empty,
@@ -90,7 +92,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
       .mapMaterializedValue { actorRef =>
         replicator ! Replicator.Subscribe[LWWRegister[Option[V]]](subscribekey, actorRef)
         println("In materialize .... " + subscribekey)
-        NotUsed
+        Future.successful(NotUsed)
       }
       /*.map { a =>
         println("*" * 80)
@@ -102,10 +104,11 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
       .collect {
         case c @ Replicator.Changed(datakey) => //if (c.get(datakey).value.get != None) =>
           println("Value Changed ... " + datakey)
-          ValueUpdated(c.get(datakey).value.get)
-        case c @ Replicator.Changed(dataKey) ⇒
+          //ValueUpdated(c.get(datakey).value.get)
+          MyWatchEvent(c.get(datakey).value.get)
+        /*case c @ Replicator.Changed(dataKey) ⇒
           println("Empty Value for Key... " + dataKey)
-          KeyRemoved
+          KeyRemoved*/
         case _ => throw new RuntimeException(s"Exeption in Subscribed collect..")
 
       }

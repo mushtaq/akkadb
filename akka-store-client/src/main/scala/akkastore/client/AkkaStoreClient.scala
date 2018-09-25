@@ -6,13 +6,12 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, Materializer}
-import akkastore.api._
+import akkastore.api.{MyWatchEvent, _}
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
-import play.api.libs.json.Format
+import play.api.libs.json.{Format, JsValue, Json}
 
 import scala.async.Async._
 import scala.concurrent.{ExecutionContext, Future}
@@ -80,10 +79,11 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
     }
   }
 
-  override def watch(key: K): Source[WatchEvent[V], NotUsed] = {
+  //override def watch(key: K): Source[WatchEvent[V], Future[NotUsed]] = {
+  override def watch(key: K): Source[MyWatchEvent[V], Future[NotUsed]] = {
+    import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling._
 
-    val resSource = async {
-
+    val x = async {
       val request = HttpRequest()
         .withMethod(HttpMethods.POST)
         .withUri(s"$baseUri/watch")
@@ -93,10 +93,16 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
 
       val response = await(Http().singleRequest(request))
       println(response)
-      await(Unmarshal(response.entity).to[Source[ServerSentEvent, NotUsed]])
-    }
 
-    //Here form a Source that will return Source[WatchEvent[V], NotUsed]
-    ???
+      val sseStream = await(Unmarshal(response.entity).to[Source[ServerSentEvent, NotUsed]])
+
+      println(sseStream)
+
+      sseStream.map(x => {
+        println("Event data in client..." + x.data)
+        Json.parse(x.data).as[MyWatchEvent[V]]
+      })
+    }
+    Source.fromFutureSource(x)
   }
 }

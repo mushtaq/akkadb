@@ -12,7 +12,8 @@ lazy val AkkaHttpVersion  = "10.1.3"
 lazy val `akka-store-api` = project.settings(
   libraryDependencies ++= Seq(
     "com.typesafe.play" %% "play-json"   % "2.6.10",
-    "com.typesafe.akka" %% "akka-stream-typed" % "2.5.16"
+    "com.typesafe.akka" %% "akka-stream-typed" % "2.5.16",
+    "org.julienrf" %% "play-json-derived-codecs" % "4.0.1"
   )
 )
 
