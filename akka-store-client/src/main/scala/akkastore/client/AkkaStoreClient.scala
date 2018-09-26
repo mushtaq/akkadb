@@ -9,9 +9,9 @@ import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, Materializer}
-import akkastore.api.{MyWatchEvent, _}
+import akkastore.api._
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
-import play.api.libs.json.{Format, JsValue, Json}
+import play.api.libs.json.{Format, Json}
 
 import scala.async.Async._
 import scala.concurrent.{ExecutionContext, Future}
@@ -79,8 +79,8 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
     }
   }
 
-  //override def watch(key: K): Source[WatchEvent[V], Future[NotUsed]] = {
-  override def watch(key: K): Source[MyWatchEvent[V], Future[NotUsed]] = {
+  override def watch(key: K): Source[WatchEvent[V], Future[NotUsed]] = {
+    //override def watch(key: K): Source[MyWatchEvent[V], Future[NotUsed]] = {
     import akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling._
 
     val x = async {
@@ -100,7 +100,8 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
 
       sseStream.map(x => {
         println("Event data in client..." + x.data)
-        Json.parse(x.data).as[MyWatchEvent[V]]
+        // Json.parse(x.data).as[MyWatchEvent[V]]
+        Json.parse(x.data).as[WatchEvent[V]]
       })
     }
     Source.fromFutureSource(x)

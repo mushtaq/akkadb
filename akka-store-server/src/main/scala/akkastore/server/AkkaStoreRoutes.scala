@@ -2,11 +2,13 @@ package akkastore.server
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.{Directives, Route}
+import akkastore.api.WatchEvent.ValueUpdated
 import akkastore.api._
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
-import play.api.libs.json.{Format, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.duration._
+
 class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJsonSupport with Directives {
   import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 
