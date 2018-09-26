@@ -18,8 +18,7 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
 
     client.set(NumId(1), NumStrDatails("name1", "9898989")).get
 
-    //Thread.sleep(2000)
-
+    //Testing watchKey event
     Await.result(client.watch(NumId(1)).runForeach(println), 5.seconds)
 
     //client.set(NumId(1), NumStrDatails("222name1", "22229898989")).get
