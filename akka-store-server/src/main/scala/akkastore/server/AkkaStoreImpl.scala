@@ -61,6 +61,9 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
   }
 
   override def remove(key: K): Future[Ok] = async {
+    //for key watching -- with value as None.
+    await(updateWatchKey(key, Option.empty[V]))
+
     val remove: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
       Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ - key)
 
@@ -96,15 +99,14 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
         println(a)
         println("*" * 80)
         a
-      }
-       */
+      }*/
       .collect {
-        case c @ Replicator.Changed(datakey) => //if (c.get(datakey).value.get != None) =>
+        case c @ Replicator.Changed(datakey) if (c.get(datakey).value.get == None) =>
+          println("Key Deleted ... " + datakey)
+          KeyRemoved //Some issues with replicator subscibing an event- when value against key is None. Need to look into it.
+        case c @ Replicator.Changed(datakey) =>
           println("Value Changed ... " + datakey)
           ValueUpdated(c.get(datakey).value.get)
-        /*case c @ Replicator.Changed(dataKey) ⇒
-          println("Empty Value for Key... " + dataKey)
-          KeyRemoved*/
         case _ => throw new RuntimeException(s"Exeption in Subscribed collect..")
       }
     //watchEvent.to(Sink.foreach(println)).run()
@@ -128,4 +130,5 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
       case x => throw new RuntimeException(s"update failed due to: $x")
     }
   }
+
 }

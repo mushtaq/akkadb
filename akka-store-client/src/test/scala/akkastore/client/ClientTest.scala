@@ -19,9 +19,12 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
     val client = new AkkaStoreClient[NumId, NumStrDatails]("http://localhost:8080/akkastore/demo-store1")
 
     client.set(NumId(1), NumStrDatails("name1", "9898989")).get
+    client.remove(NumId(1))
+    client.set(NumId(1), NumStrDatails("name1", "9999999")).get
 
     //Testing watchKey event
-    //Await.result(client.watch(NumId(1)).runForeach(println), 5.seconds)
+    // Await.result(client.watch(NumId(1)).runForeach(println), 10.seconds)
+
     val killswitch = client
       .watch(NumId(1))
       .toMat(Sink.foreach(println))(Keep.left)
@@ -30,8 +33,6 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
     actorSystem.scheduler.scheduleOnce(20.seconds) {
       killswitch.shutdown()
     }
-
-    Thread.sleep(2000)
 
     client.set(NumId(1), NumStrDatails("222name1", "22229898989")).get
     client.set(NumId(2), NumStrDatails("name2", "878787")).get
@@ -42,7 +43,8 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
     client.remove(NumId(2))
     println((client.list).get)
   }
-  //Thread.sleep(2000)
+
+  Thread.sleep(2000)
 
   test("Test Model2 - key of type String") {
 

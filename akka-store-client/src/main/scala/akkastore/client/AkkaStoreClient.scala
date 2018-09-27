@@ -67,7 +67,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
     val request = HttpRequest()
       .withMethod(HttpMethods.POST)
       .withUri(s"$baseUri/remove")
-      .withEntity(await(Marshal(key).to[MessageEntity]))
+      .withEntity(await(Marshal(KPayload(key)).to[MessageEntity]))
 
     val response = await(Http().singleRequest(request))
 
@@ -86,7 +86,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
       val request = HttpRequest()
         .withMethod(HttpMethods.POST)
         .withUri(s"$baseUri/watch")
-        .withEntity(await(Marshal(key).to[MessageEntity]))
+        .withEntity(await(Marshal(KPayload(key)).to[MessageEntity]))
 
       println(request)
 
