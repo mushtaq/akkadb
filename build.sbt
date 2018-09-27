@@ -39,7 +39,7 @@ lazy val `akka-store-server` = project
       "com.typesafe.akka"      %% "akka-http"             % AkkaHttpVersion,
       "com.typesafe.akka"      %% "akka-http-xml"         % AkkaHttpVersion,
       "com.typesafe.akka"      %% "akka-http-testkit"     % AkkaHttpVersion,
-      "com.typesafe.akka"      %% "akka-stream"           % AkkaVersion,
+      "com.typesafe.akka"      %% "akka-stream-typed"     %      "2.5.16",
       "org.scalatest"          %% "scalatest"             % "3.0.5" % "test",
       "de.heikoseeberger"      %% "akka-http-play-json"   % "1.21.0",
       "org.scala-lang.modules" %% "scala-async"           % "0.9.7",

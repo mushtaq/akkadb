@@ -2,7 +2,6 @@ package akkastore.server
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.{Directives, Route}
-import akkastore.api.WatchEvent.ValueUpdated
 import akkastore.api._
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import play.api.libs.json.{JsValue, Json}
@@ -56,7 +55,7 @@ class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJ
                   println("*" * 80)
                   println(msg)
                   println("*" * 80)
-                  //here we can push to client changed value against key by using server side events...
+                  //here we push to client changed value against key by using server side events...
                   ServerSentEvent(Json.toJson(msg).toString)
                 }
                 .keepAlive(1.second, () => ServerSentEvent.heartbeat)
