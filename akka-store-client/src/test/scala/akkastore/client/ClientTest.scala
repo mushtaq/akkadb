@@ -14,7 +14,24 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
   implicit val actorSystem: ActorSystem = ActorSystem("test")
   implicit val mat: Materializer        = ActorMaterializer()
 
-  test("Test Model1 - key of type Int") {
+  test("Test Model - key of type String") {
+
+    val client2 = new AkkaStoreClient[Id, Person]("http://localhost:8080/akkastore/demo-store2")
+
+    client2.set(Id("001"), Person("name1", 10)).get
+    client2.set(Id("002"), Person("name2", 20)).get
+    client2.set(Id("003"), Person("name3", 30)).get
+    client2.set(Id("004"), Person("name4", 40)).get
+    client2.set(Id("005"), Person("name5", 50)).get
+    println(client2.get(Id("001")).get)
+    client2.remove(Id("002"))
+    println((client2.list).get)
+
+  }
+
+  Thread.sleep(2000)
+
+  test("Test Model - key of type Int and key watch") {
 
     val client = new AkkaStoreClient[NumId, NumStrDatails]("http://localhost:8080/akkastore/demo-store1")
 
@@ -42,23 +59,6 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
     println(client.get(NumId(1)).get)
     client.remove(NumId(2))
     println((client.list).get)
-  }
-
-  Thread.sleep(2000)
-
-  test("Test Model2 - key of type String") {
-
-    val client2 = new AkkaStoreClient[Id, Person]("http://localhost:8080/akkastore/demo-store2")
-
-    client2.set(Id("001"), Person("name1", 10)).get
-    client2.set(Id("002"), Person("name2", 20)).get
-    client2.set(Id("003"), Person("name3", 30)).get
-    client2.set(Id("004"), Person("name4", 40)).get
-    client2.set(Id("005"), Person("name5", 50)).get
-    println(client2.get(Id("001")).get)
-    client2.remove(Id("002"))
-    println((client2.list).get)
-
   }
 
   implicit class BlockingFuture[T](f: Future[T]) {

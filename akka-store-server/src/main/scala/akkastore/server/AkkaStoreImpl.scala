@@ -14,14 +14,25 @@ import akkastore.api._
 import scala.async.Async._
 import scala.concurrent.Future
 
+/**
+ * Holds key-value pair in CRDT map of type LWWMap
+ *
+ * @param dbName - Akka store name.
+ * @param runtime - Holds all system specific data needed. like replicator, ec, materializer etc.
+ * @tparam K - Key of type K.
+ * @tparam V - Value of type V.
+ */
 class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaStore[K, V] {
   import runtime._
 
   val DataKey: LWWMapKey[K, V] = LWWMapKey[K, V](dbName)
 
+  /**
+   * set : will either add a new key-value pair or update existing key with specified value in akka store
+   */
   override def set(key: K, value: V): Future[Ok] = async {
 
-    //for Key Watching
+    //for key watching
     await(updateWatchKey(key, Some(value)))
 
     val update: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
@@ -36,15 +47,27 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     }
   }
 
+  /**
+   * list : Lists all the available key-value entries in CRDT map
+   */
   override def list: Future[List[KVPayload[K, V]]] = {
     listInner.map(m => m.map { case (key, value) => KVPayload(key, value) }.toList)
   }
 
+  /**
+   * get : Will return value against key
+   */
   override def get(key: K): Future[Option[V]] = {
     println("Inside get ...." + key)
     listInner.map(_.get(key))
   }
 
+  /**
+   * listInner : is a common function used by 'get' and 'list' functions.
+   * replcator always returns entire list of key-value pairs. In case of 'get' we extract the value of specific key.
+   * In list the result is forwarded by adding to payload.
+   *
+   */
   private def listInner: Future[Map[K, V]] = async {
     println("Inside innerList....")
     val get    = Replicator.Get(DataKey, Replicator.ReadLocal)
@@ -55,11 +78,13 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
         val v = r.get(k)
         println("In innerList success...." + v.entries)
         v.entries
-      //Handle exceptions GetFailure and Notfound
       case x => throw new RuntimeException(s"Get failed due to: $x")
     }
   }
 
+  /**
+   * remove : will send update message to replicator to remove the specified key from akka store
+   */
   override def remove(key: K): Future[Ok] = async {
     //for key watching -- with value as None.
     await(updateWatchKey(key, Option.empty[V]))
@@ -76,8 +101,12 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     }
   }
 
+  /**
+   * watch : will subscribe to replicator to watch a perticular key.
+   * It will generate either ValueChanged or KeyRemoved message.
+   * Which will be later pushed from server as server side message.
+   */
   override def watch(key: K): Source[WatchEvent[V], KillSwitch] = {
-
     println("In watch Impl")
 
     val subscribekey: LWWRegisterKey[Option[V]] = LWWRegisterKey(key.toString)
@@ -113,7 +142,14 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     watchEvent
   }
 
-  def updateWatchKey(key: K, value: Option[V] = None): Future[Ok] = async {
+  /**
+   * updateWatchKey : This function is implemented for key watching.
+   * This function with value as None will be called from remove of akka store function
+   *
+   * Every time we set or remove key in the main akka store, we also update a seperate key in CRDT as LWWRegister.
+   * This key is used as subscribe key for replicator. This is to enable value changed/removed subscription events from replicator.
+   */
+  private def updateWatchKey(key: K, value: Option[V] = None): Future[Ok] = async {
 
     val watchKey: LWWRegisterKey[Option[V]] = LWWRegisterKey(key.toString)
 
@@ -130,5 +166,4 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
       case x => throw new RuntimeException(s"update failed due to: $x")
     }
   }
-
 }
