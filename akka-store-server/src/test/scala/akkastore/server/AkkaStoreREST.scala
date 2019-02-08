@@ -7,8 +7,6 @@ import akkastore.api.{JsonSupport, KPayload, KVPayload}
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
-import play.api.libs.json
-import play.api.libs.json.{Format, JsValue, Json, OFormat}
 
 case class KVJson(key: String, value: String)
 

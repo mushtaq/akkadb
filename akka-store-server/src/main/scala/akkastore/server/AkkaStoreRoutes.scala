@@ -2,7 +2,6 @@ package akkastore.server
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.{Directives, Route}
-import akka.stream.scaladsl.Sink
 import akkastore.api._
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import play.api.libs.json.{JsValue, Json}

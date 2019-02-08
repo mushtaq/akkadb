@@ -36,7 +36,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     await(updateWatchKey(key, Some(value)))
 
     val update: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
-      Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ + (key, value))
+      Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ :+ ((key, value)))
 
     val result = await(replicator ? update)
     result match {
@@ -90,7 +90,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     await(updateWatchKey(key, Option.empty[V]))
 
     val remove: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
-      Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ - key)
+      Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_.remove(selfUniqueAddress, key))
 
     val result = await(replicator ? remove)
     result match {
@@ -130,7 +130,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
         a
       }*/
       .collect {
-        case c @ Replicator.Changed(datakey) if (c.get(datakey).value.get == None) =>
+        case c @ Replicator.Changed(datakey) if c.get(datakey).value.get == None =>
           println("Key Deleted ... " + datakey)
           KeyRemoved //Some issues with replicator subscibing an event- when value against key is None. Need to look into it.
         case c @ Replicator.Changed(datakey) =>
@@ -149,14 +149,16 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
    * Every time we set or remove key in the main akka store, we also update a seperate key in CRDT as LWWRegister.
    * This key is used as subscribe key for replicator. This is to enable value changed/removed subscription events from replicator.
    */
-  private def updateWatchKey(key: K, value: Option[V] = None): Future[Ok] = async {
+  private def updateWatchKey(key: K, value: Option[V]): Future[Ok] = async {
 
     val watchKey: LWWRegisterKey[Option[V]] = LWWRegisterKey(key.toString)
 
     println("In UpdateWatchKey..." + key.toString + " " + value)
 
     val update: ActorRef[UpdateResponse[LWWRegister[Option[V]]]] => Update[LWWRegister[Option[V]]] =
-      Replicator.Update(watchKey, LWWRegister(Option.empty[V]), Replicator.WriteLocal)(_ => LWWRegister(value))
+      Replicator.Update(watchKey, LWWRegister(selfUniqueAddress, Option.empty[V]), Replicator.WriteLocal)(
+        _ => LWWRegister(selfUniqueAddress, value)
+      )
 
     val result = await(replicator ? update)
     result match {

@@ -1,13 +1,13 @@
 package akkastore.client
+
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Keep, Sink}
 import akka.stream.{ActorMaterializer, Materializer}
-import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationLong
 import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class ClientTest extends FunSuite with Matchers with TestJsonSupport {
 
@@ -25,7 +25,7 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
     client2.set(Id("005"), Person("name5", 50)).get
     println(client2.get(Id("001")).get)
     client2.remove(Id("002"))
-    println((client2.list).get)
+    println(client2.list.get)
 
   }
 
@@ -58,7 +58,7 @@ class ClientTest extends FunSuite with Matchers with TestJsonSupport {
     client.set(NumId(5), NumStrDatails("name5", "121121")).get
     println(client.get(NumId(1)).get)
     client.remove(NumId(2))
-    println((client.list).get)
+    println(client.list.get)
   }
 
   implicit class BlockingFuture[T](f: Future[T]) {
