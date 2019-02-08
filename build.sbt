@@ -2,7 +2,7 @@ inThisBuild(
   List(
     name := "AkkaStore",
     version := "0.1",
-    scalaVersion := "2.12.8",
+    scalaVersion := "2.13.0-M5",
     scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",
@@ -11,7 +11,6 @@ inThisBuild(
       "-deprecation",
       //"-Xfatal-warnings",
       "-Xlint",
-      "-Yno-adapted-args",
       "-Ywarn-dead-code",
       "-Xfuture",
       //"-Xprint:typer"
