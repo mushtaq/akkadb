@@ -3,7 +3,7 @@ package akkastore.server
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.{Directives, Route}
 import akkastore.api._
-import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
+import akkastore.common.PlayJsonSupport
 import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.duration._

@@ -10,7 +10,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.{ActorMaterializer, KillSwitch, KillSwitches, Materializer}
 import akkastore.api._
-import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
+import akkastore.common.PlayJsonSupport
 import play.api.libs.json.{Format, Json}
 
 import scala.async.Async._

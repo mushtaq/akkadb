@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akkastore.api.{JsonSupport, KPayload, KVPayload}
-import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
+import akkastore.common.PlayJsonSupport
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
 
