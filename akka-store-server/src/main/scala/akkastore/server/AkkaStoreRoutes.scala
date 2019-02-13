@@ -54,15 +54,9 @@ class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJ
                 jsonAkkaStore
                   .watch(key)
                   .map { msg =>
-                    println("*" * 80)
-                    println(msg)
-                    println("*" * 80)
-                    //here we push to client changed value against key by using server side events...
                     ServerSentEvent(Json.toJson(msg).toString)
                   }
                   .keepAlive(1.second, () => ServerSentEvent.heartbeat)
-                //.to(Sink.ignore)
-                //.run()(actorRuntime.mat)
               }
           }
         }

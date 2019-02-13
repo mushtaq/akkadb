@@ -36,11 +36,10 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     await(updateWatchKey(key, Some(value)))
 
     val update: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
-      Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ :+ ((key, value)))
+      Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ :+ (key -> value))
 
-    val result = await(replicator ? update)
-    result match {
-      case x: Replicator.UpdateSuccess[_] =>
+    await(replicator ? update) match {
+      case _: Replicator.UpdateSuccess[_] =>
         println("update success in set")
         Ok
       case x => throw new RuntimeException(s"update failed due to: $x")
@@ -51,7 +50,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
    * list : Lists all the available key-value entries in CRDT map
    */
   override def list: Future[List[KVPayload[K, V]]] = {
-    listInner.map(m => m.map { case (key, value) => KVPayload(key, value) }.toList)
+    listInner.map(m => m.toList.map { case (key, value) => KVPayload(key, value) })
   }
 
   /**
@@ -70,11 +69,9 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
    */
   private def listInner: Future[Map[K, V]] = async {
     println("Inside innerList....")
-    val get    = Replicator.Get(DataKey, Replicator.ReadLocal)
-    val result = await(replicator ? get)
-
-    result match {
-      case r @ Replicator.GetSuccess(k, v) =>
+    val get = Replicator.Get(DataKey, Replicator.ReadLocal)
+    await(replicator ? get) match {
+      case r @ Replicator.GetSuccess(k, _) =>
         val v = r.get(k)
         println("In innerList success...." + v.entries)
         v.entries
@@ -87,22 +84,20 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
    */
   override def remove(key: K): Future[Ok] = async {
     //for key watching -- with value as None.
-    await(updateWatchKey(key, Option.empty[V]))
+    await(updateWatchKey(key, None))
 
-    val remove: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
-      Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_.remove(selfUniqueAddress, key))
+    val remove = Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_.remove(selfUniqueAddress, key))
 
-    val result = await(replicator ? remove)
-    result match {
-      case x: Replicator.UpdateSuccess[_] =>
-        println("update success in remove")
+    await(replicator ? remove) match {
+      case _: Replicator.UpdateSuccess[_] =>
+        println(s"key=$key is removed")
         Ok
       case x => throw new RuntimeException(s"deletion failed due to: $x")
     }
   }
 
   /**
-   * watch : will subscribe to replicator to watch a perticular key.
+   * watch : will subscribe to replicator to watch a particular key.
    * It will generate either ValueChanged or KeyRemoved message.
    * Which will be later pushed from server as server side message.
    */
@@ -111,7 +106,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
 
     val subscribekey: LWWRegisterKey[Option[V]] = LWWRegisterKey(key.toString)
 
-    implicit val watchEvent: Source[WatchEvent[V], KillSwitch] = ActorSource
+    ActorSource
       .actorRef[Replicator.Changed[LWWRegister[Option[V]]]](
         completionMatcher = PartialFunction.empty,
         failureMatcher = PartialFunction.empty,
@@ -120,15 +115,9 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
       )
       .mapMaterializedValue { actorRef =>
         replicator ! Replicator.Subscribe[LWWRegister[Option[V]]](subscribekey, actorRef)
-        println("In materialize .... " + subscribekey)
+        println("subscribing with .... " + subscribekey)
       }
       .viaMat(KillSwitches.single)(Keep.right)
-      /*.map { a =>
-        println("*" * 80)
-        println(a)
-        println("*" * 80)
-        a
-      }*/
       .collect {
         case c @ Replicator.Changed(datakey) if c.get(datakey).value.get == None =>
           println("Key Deleted ... " + datakey)
@@ -138,8 +127,6 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
           ValueUpdated(c.get(datakey).value.get)
         case _ => throw new RuntimeException(s"Exeption in Subscribed collect..")
       }
-    //watchEvent.to(Sink.foreach(println)).run()
-    watchEvent
   }
 
   /**
@@ -151,18 +138,14 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
    */
   private def updateWatchKey(key: K, value: Option[V]): Future[Ok] = async {
 
-    val watchKey: LWWRegisterKey[Option[V]] = LWWRegisterKey(key.toString)
-
     println("In UpdateWatchKey..." + key.toString + " " + value)
 
-    val update: ActorRef[UpdateResponse[LWWRegister[Option[V]]]] => Update[LWWRegister[Option[V]]] =
-      Replicator.Update(watchKey, LWWRegister(selfUniqueAddress, Option.empty[V]), Replicator.WriteLocal)(
-        _ => LWWRegister(selfUniqueAddress, value)
-      )
+    val initial = LWWRegister(selfUniqueAddress, Option.empty[V])
+    val updated = LWWRegister(selfUniqueAddress, value)
+    val update  = Replicator.Update(LWWRegisterKey(key.toString), initial, Replicator.WriteLocal)(_ => updated)
 
-    val result = await(replicator ? update)
-    result match {
-      case x: Replicator.UpdateSuccess[_] =>
+    await(replicator ? update) match {
+      case _: Replicator.UpdateSuccess[_] =>
         println("WatchKey update success..")
         Ok
       case x => throw new RuntimeException(s"update failed due to: $x")

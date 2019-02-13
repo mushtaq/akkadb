@@ -8,13 +8,11 @@ import scala.concurrent.Future
 class AkkaStoreServer(route: AkkaStoreRoutes, actorRuntime: ActorRuntime) {
   import actorRuntime._
 
-  //Http port and host name will be read from application.conf file
-  val config          = ConfigFactory.load()
-  val httpPserverPort = config.getInt("akka.http-port")
-  val httphost        = config.getString("akka.http-host")
+  private val config          = ConfigFactory.load()
+  private val httpPserverPort = config.getInt("akka.http-port")
 
   def start(): Future[Http.ServerBinding] = {
-    println("Akka http server started at  *** " + httphost + ":" + httpPserverPort)
-    Http().bindAndHandle(route.route, httphost, httpPserverPort)
+    println("Akka http server started at  *** 0.0.0.0:" + httpPserverPort)
+    Http().bindAndHandle(route.route, "0.0.0.0", httpPserverPort)
   }
 }

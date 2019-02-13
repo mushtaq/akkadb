@@ -58,7 +58,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
 
     response.status match {
       case StatusCodes.OK => Ok
-      case x              => throw new RuntimeException(response.entity.toString)
+      case _              => throw new RuntimeException(response.entity.toString)
     }
   }
 
@@ -95,13 +95,12 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
       await(Unmarshal(response.entity).to[Source[ServerSentEvent, NotUsed]])
     }
 
-    val sseStream = Source.fromFutureSource(sssFutureStream)
-    val xx: Source[WatchEvent[V], KillSwitch] = sseStream
-      .map(x => {
-        println("Event data in client..." + x.data)
-        Json.parse(x.data).as[WatchEvent[V]]
-      })
+    Source
+      .fromFutureSource(sssFutureStream)
+      .map { serverSentEvent =>
+        println("Event data in client..." + serverSentEvent.data)
+        Json.parse(serverSentEvent.data).as[WatchEvent[V]]
+      }
       .viaMat(KillSwitches.single)(Keep.right)
-    xx
   }
 }
