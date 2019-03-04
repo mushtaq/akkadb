@@ -1,13 +1,11 @@
 package akkastore.server
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.cluster.ddata._
 import akka.cluster.ddata.typed.scaladsl.Replicator
-import akka.cluster.ddata.typed.scaladsl.Replicator.{Update, UpdateResponse}
-import akka.stream.{KillSwitch, KillSwitches, OverflowStrategy}
 import akka.stream.scaladsl.{Keep, Source}
 import akka.stream.typed.scaladsl.ActorSource
+import akka.stream.{KillSwitch, KillSwitches, OverflowStrategy}
 import akkastore.api.WatchEvent.{KeyRemoved, ValueUpdated}
 import akkastore.api._
 
@@ -35,8 +33,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     //for key watching
     await(updateWatchKey(key, Some(value)))
 
-    val update: ActorRef[UpdateResponse[LWWMap[K, V]]] => Update[LWWMap[K, V]] =
-      Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ :+ (key -> value))
+    val update = Replicator.Update(DataKey, LWWMap.empty[K, V], Replicator.WriteLocal)(_ :+ (key -> value))
 
     await(replicator ? update) match {
       case _: Replicator.UpdateSuccess[_] =>
@@ -49,32 +46,29 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
   /**
    * list : Lists all the available key-value entries in CRDT map
    */
-  override def list: Future[List[KVPayload[K, V]]] = {
-    listInner.map(m => m.toList.map { case (key, value) => KVPayload(key, value) })
-  }
-
-  /**
-   * get : Will return value against key
-   */
-  override def get(key: K): Future[Option[V]] = {
-    println("Inside get ...." + key)
-    listInner.map(_.get(key))
-  }
-
-  /**
-   * listInner : is a common function used by 'get' and 'list' functions.
-   * replcator always returns entire list of key-value pairs. In case of 'get' we extract the value of specific key.
-   * In list the result is forwarded by adding to payload.
-   *
-   */
-  private def listInner: Future[Map[K, V]] = async {
+  override def list: Future[List[KVPayload[K, V]]] = async {
     println("Inside innerList....")
     val get = Replicator.Get(DataKey, Replicator.ReadLocal)
     await(replicator ? get) match {
       case r @ Replicator.GetSuccess(k, _) =>
         val v = r.get(k)
         println("In innerList success...." + v.entries)
-        v.entries
+        v.entries.toList.map { case (key, value) => KVPayload(key, value) }
+      case x => throw new RuntimeException(s"Get failed due to: $x")
+    }
+  }
+
+  /**
+   * get : Will return value against key
+   */
+  override def get(key: K): Future[Option[V]] = async {
+    println("Inside get ...." + key)
+    val get = Replicator.Get(LWWRegisterKey[Option[V]](key.toString), Replicator.ReadLocal)
+    await(replicator ? get) match {
+      case r @ Replicator.GetSuccess(k, _) =>
+        val v = r.get(k)
+        println("In get success...." + v.value)
+        v.value
       case x => throw new RuntimeException(s"Get failed due to: $x")
     }
   }
