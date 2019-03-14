@@ -38,26 +38,24 @@ class AkkaStoreRoutes(actorRuntime: ActorRuntime) extends JsonSupport with PlayJ
           }
         } ~
         path("remove") {
-          entity(as[KPayload[JsValue]]) {
-            case KPayload(key) =>
-              println(s"* * *In $dbName remove. Key is - $key * * *")
-              onSuccess(jsonAkkaStore.remove(key)) { _ =>
-                complete(s"Successfully removed key=$key")
-              }
+          entity(as[JsValue]) { key =>
+            println(s"* * *In $dbName remove. Key is - $key * * *")
+            onSuccess(jsonAkkaStore.remove(key)) { _ =>
+              complete(s"Successfully removed key=$key")
+            }
           }
         } ~
         path("watch") {
-          entity(as[KPayload[JsValue]]) {
-            case KPayload(key) =>
-              println(s"* * *In $dbName watch. Key is - $key * * *")
-              complete {
-                jsonAkkaStore
-                  .watch(key)
-                  .map { msg =>
-                    ServerSentEvent(Json.toJson(msg).toString)
-                  }
-                  .keepAlive(1.second, () => ServerSentEvent.heartbeat)
-              }
+          entity(as[JsValue]) { key =>
+            println(s"* * *In $dbName watch. Key is - $key * * *")
+            complete {
+              jsonAkkaStore
+                .watch(key)
+                .map { msg =>
+                  ServerSentEvent(Json.toJson(msg).toString)
+                }
+                .keepAlive(1.second, () => ServerSentEvent.heartbeat)
+            }
           }
         }
       }

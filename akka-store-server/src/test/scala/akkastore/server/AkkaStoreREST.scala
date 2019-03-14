@@ -3,7 +3,7 @@ package akkastore.server
 import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akkastore.api.{JsonSupport, KPayload, KVPayload}
+import akkastore.api.{JsonSupport, KVPayload}
 import akkastore.common.PlayJsonSupport
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
@@ -90,7 +90,7 @@ class AkkaStoreREST
 
     "POST remove" in {
 
-      Post("/akkastore/demo-store/remove", KPayload("b")) ~> akkaDBRoutes.route ~> check {
+      Post("/akkastore/demo-store/remove", "b") ~> akkaDBRoutes.route ~> check {
         status shouldBe StatusCodes.OK
         responseAs[String] shouldEqual "Successfully removed key=" + """"b""""
       }
@@ -132,7 +132,7 @@ class AkkaStoreREST
      */
 
     "POST watch  1" in {
-      Post("/akkastore/demo-store/watch", KPayload("a")) ~> akkaDBRoutes.route ~> check {
+      Post("/akkastore/demo-store/watch", "a") ~> akkaDBRoutes.route ~> check {
         status shouldBe StatusCodes.OK
         // responseAs[String] shouldEqual "Successfully watching key=" + """"a""""
       }
@@ -166,7 +166,7 @@ class AkkaStoreREST
 
     "POST watch 2" in {
 
-      Post("/akkastore/demo-store/watch", KPayload("a")) ~> akkaDBRoutes.route ~> check {
+      Post("/akkastore/demo-store/watch", "a") ~> akkaDBRoutes.route ~> check {
         status shouldBe StatusCodes.OK
         responseAs[String] shouldEqual "Successfully watching key=" + """"a""""
       }

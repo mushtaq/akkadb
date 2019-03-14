@@ -1,23 +1,20 @@
 package akkastore.api
 
+import akka.Done
 import akka.stream.KillSwitch
 import akka.stream.scaladsl.Source
 
 import scala.concurrent.Future
 
 abstract class AkkaStore[K, V] {
-  def set(key: K, value: V): Future[Ok]
+  def set(key: K, value: V): Future[Done]
   def list: Future[List[KVPayload[K, V]]]
   def get(key: K): Future[Option[V]]
-  def remove(key: K): Future[Ok]
+  def remove(key: K): Future[Done]
   def watch(key: K): Source[WatchEvent[V], KillSwitch]
 }
 
-sealed trait Ok
-case object Ok extends Ok
-
 case class KVPayload[K, V](key: K, value: V)
-case class KPayload[K](key: K)
 
 sealed trait WatchEvent[+T]
 object WatchEvent {

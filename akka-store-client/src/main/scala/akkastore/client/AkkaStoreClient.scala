@@ -1,6 +1,6 @@
 package akkastore.client
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
@@ -44,7 +44,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
     await(Unmarshal(response.entity).to[Option[V]])
   }
 
-  override def set(key: K, value: V): Future[Ok] = async {
+  override def set(key: K, value: V): Future[Done] = async {
     val request = HttpRequest()
       .withMethod(HttpMethods.POST)
       .withUri(s"$baseUri/set")
@@ -57,24 +57,24 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
     response.discardEntityBytes()
 
     response.status match {
-      case StatusCodes.OK => Ok
+      case StatusCodes.OK => Done
       case _              => throw new RuntimeException(response.entity.toString)
     }
   }
 
-  override def remove(key: K): Future[Ok] = async {
+  override def remove(key: K): Future[Done] = async {
 
     val request = HttpRequest()
       .withMethod(HttpMethods.POST)
       .withUri(s"$baseUri/remove")
-      .withEntity(await(Marshal(KPayload(key)).to[MessageEntity]))
+      .withEntity(await(Marshal(key).to[MessageEntity]))
 
     val response = await(Http().singleRequest(request))
 
     response.discardEntityBytes()
 
     response.status match {
-      case StatusCodes.OK => Ok
+      case StatusCodes.OK => Done
       case x              => throw new RuntimeException(response.entity.toString)
     }
   }
@@ -86,7 +86,7 @@ class AkkaStoreClient[K: Format, V: Format](baseUri: String)(implicit actorSyste
       val request = HttpRequest()
         .withMethod(HttpMethods.POST)
         .withUri(s"$baseUri/watch")
-        .withEntity(await(Marshal(KPayload(key)).to[MessageEntity]))
+        .withEntity(await(Marshal(key).to[MessageEntity]))
 
       println(request)
 

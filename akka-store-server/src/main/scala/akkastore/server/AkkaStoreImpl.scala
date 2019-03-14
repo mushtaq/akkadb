@@ -1,5 +1,6 @@
 package akkastore.server
 
+import akka.Done
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.cluster.ddata._
 import akka.cluster.ddata.typed.scaladsl.Replicator
@@ -28,7 +29,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
   /**
    * set : will either add a new key-value pair or update existing key with specified value in akka store
    */
-  override def set(key: K, value: V): Future[Ok] = async {
+  override def set(key: K, value: V): Future[Done] = async {
 
     //for key watching
     await(updateWatchKey(key, Some(value)))
@@ -38,7 +39,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     await(replicator ? update) match {
       case _: Replicator.UpdateSuccess[_] =>
         println("update success in set")
-        Ok
+        Done
       case x => throw new RuntimeException(s"update failed due to: $x")
     }
   }
@@ -76,7 +77,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
   /**
    * remove : will send update message to replicator to remove the specified key from akka store
    */
-  override def remove(key: K): Future[Ok] = async {
+  override def remove(key: K): Future[Done] = async {
     //for key watching -- with value as None.
     await(updateWatchKey(key, None))
 
@@ -85,7 +86,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     await(replicator ? remove) match {
       case _: Replicator.UpdateSuccess[_] =>
         println(s"key=$key is removed")
-        Ok
+        Done
       case x => throw new RuntimeException(s"deletion failed due to: $x")
     }
   }
@@ -130,7 +131,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
    * Every time we set or remove key in the main akka store, we also update a seperate key in CRDT as LWWRegister.
    * This key is used as subscribe key for replicator. This is to enable value changed/removed subscription events from replicator.
    */
-  private def updateWatchKey(key: K, value: Option[V]): Future[Ok] = async {
+  private def updateWatchKey(key: K, value: Option[V]): Future[Done] = async {
 
     println("In UpdateWatchKey..." + key.toString + " " + value)
 
@@ -141,7 +142,7 @@ class AkkaStoreImpl[K, V](dbName: String, runtime: ActorRuntime) extends AkkaSto
     await(replicator ? update) match {
       case _: Replicator.UpdateSuccess[_] =>
         println("WatchKey update success..")
-        Ok
+        Done
       case x => throw new RuntimeException(s"update failed due to: $x")
     }
   }
